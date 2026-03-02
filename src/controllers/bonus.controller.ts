@@ -17,15 +17,20 @@ export async function spendUserBonus(
   next: NextFunction,
 ): Promise<void> {
   try {
+    const requestId = req.headers['idempotency-key'] || req.body['requestId'];
     const amount = Number(req.body?.amount);
+
+    if (!requestId || typeof requestId !== 'string') {
+      throw createAppError('requestId is required or requestId must be a string', 400);
+    }
 
     if (!Number.isInteger(amount) || amount <= 0) {
       throw createAppError('amount must be a positive integer', 400);
     }
 
-    await spendBonus(req.params.id, amount);
+    const response = await spendBonus(req.params.id, amount, requestId);
 
-    res.json({ success: true });
+    res.json(response);
   } catch (error) {
     next(error);
   }
