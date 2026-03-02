@@ -11,6 +11,8 @@ function createAppError(message: string, status: number): AppError {
   return error;
 }
 
+
+
 export async function spendUserBonus(
   req: Request,
   res: Response,
@@ -42,10 +44,20 @@ export async function enqueueExpireAccrualsJob(
   next: NextFunction,
 ): Promise<void> {
   try {
-    await bonusQueue.add('expireAccruals', {
-      createdAt: new Date().toISOString(),
-    });
 
+    await bonusQueue.add(
+      'expireAccruals',
+      { createdAt: new Date().toISOString() },
+      {
+        jobId: 'expire-accruals', // Предсказуемый ID 
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+        removeOnComplete: true,
+      }
+    );
     res.json({ queued: true });
   } catch (error) {
     next(error);
